@@ -1,6 +1,6 @@
 # Gitness
 
-Gitness is your repository's fitness tracker! Measure your project's health by discovering its bus factor and contributor dynamics.
+Gitness - Your repo's fitness witness! Track your bus factor before your code misses the bus.
 
 ## Features
 
