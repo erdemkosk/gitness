@@ -55,21 +55,28 @@ gitness
 #### GitHub Actions
 
 ```yaml
-name: Gitness Analysis
-on: [push]
+name: Gitness Bus Factor Analysis
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
 
 jobs:
-  analyze:
+  check-bus-factor:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Run Gitness
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      
+      - name: Run Bus Factor Analysis
+        uses: docker://erdemkosk/gitness:latest
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          docker run -e GITHUB_TOKEN=$GITHUB_TOKEN \
-                    -e REPOSITORY_URL=$GITHUB_REPOSITORY \
-                    gitness --output json
+          GITHUB_TOKEN: ${{ secrets.GITNESS_GITHUB_TOKEN }}
+          REPOSITORY_URL: "https://github.com/${{ github.repository }}"
+          OUTPUT_FORMAT: json
+        id: analysis
 ```
 
 ## Output Formats
