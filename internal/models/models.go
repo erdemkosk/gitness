@@ -1,6 +1,10 @@
 package models
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
+)
 
 type Author struct {
 	Name  string
@@ -34,4 +38,38 @@ func (rs *RepositoryStats) Print() {
 	for _, c := range rs.Contributors {
 		fmt.Printf("%s: %d commits (%.1f%%)\n", c.Name, c.Commits, c.Percentage)
 	}
+}
+
+func (rs *RepositoryStats) ToJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Owner        string        `json:"owner"`
+		Repo         string        `json:"repo"`
+		BusFactor    int           `json:"busFactor"`
+		TotalCommits int           `json:"totalCommits"`
+		Contributors []Contributor `json:"contributors"`
+	}{
+		Owner:        rs.Owner,
+		Repo:         rs.Repo,
+		BusFactor:    rs.BusFactor,
+		TotalCommits: rs.TotalCommits,
+		Contributors: rs.Contributors,
+	})
+}
+
+func (rs *RepositoryStats) ToMarkdown() string {
+	var md strings.Builder
+
+	md.WriteString(fmt.Sprintf("# Repository Analysis: %s/%s\n\n", rs.Owner, rs.Repo))
+	md.WriteString(fmt.Sprintf("## Bus Factor: %d\n\n", rs.BusFactor))
+	md.WriteString(fmt.Sprintf("Total Commits: %d\n\n", rs.TotalCommits))
+
+	md.WriteString("## Contributors\n\n")
+	md.WriteString("| Name | Commits | Percentage |\n")
+	md.WriteString("|------|---------|------------|\n")
+
+	for _, c := range rs.Contributors {
+		md.WriteString(fmt.Sprintf("| %s | %d | %.1f%% |\n", c.Name, c.Commits, c.Percentage))
+	}
+
+	return md.String()
 }
