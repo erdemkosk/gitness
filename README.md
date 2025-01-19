@@ -2,6 +2,8 @@
 
 Gitness - Your repo's fitness witness! Track your bus factor before your code misses the bus.
 
+![Gitness](/logo.png)
+
 ## Features
 
 - Calculate repository bus factor
