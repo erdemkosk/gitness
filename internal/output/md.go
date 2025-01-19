@@ -12,6 +12,7 @@ type MarkdownFormatter struct{}
 func (f *MarkdownFormatter) Format(stats *models.RepositoryStats) (string, error) {
 	var md strings.Builder
 
+	md.WriteString("![Gitness](https://github.com/erdemkosk/gitness/blob/master/logo.png?raw=true)\n\n")
 	md.WriteString(fmt.Sprintf("# Repository Analysis: %s/%s\n\n", stats.Owner, stats.Repo))
 	md.WriteString(fmt.Sprintf("## Bus Factor: %d\n\n", stats.BusFactor))
 	md.WriteString(fmt.Sprintf("Total Commits: %d\n\n", stats.TotalCommits))
