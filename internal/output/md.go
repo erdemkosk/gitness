@@ -14,7 +14,40 @@ func (f *MarkdownFormatter) Format(stats *models.RepositoryStats) (string, error
 
 	md.WriteString("![Gitness](https://github.com/erdemkosk/gitness/blob/master/logo.png?raw=true)\n\n")
 	md.WriteString(fmt.Sprintf("# Repository Analysis: %s/%s\n\n", stats.Owner, stats.Repo))
-	md.WriteString(fmt.Sprintf("## Bus Factor: %d\n\n", stats.BusFactor))
+
+	// Bus Factor status
+	busFactorEmoji := "🟢"
+	if stats.BusFactor < 2 {
+		busFactorEmoji = "🔴"
+	} else if stats.BusFactor < 4 {
+		busFactorEmoji = "🟡"
+	}
+
+	// Active Contributor status
+	activityEmoji := "🟢"
+	if stats.ContributorActivity < 30 {
+		activityEmoji = "🔴"
+	} else if stats.ContributorActivity < 50 {
+		activityEmoji = "🟡"
+	}
+
+	// Recent Contributors status
+	recentEmoji := "🟢"
+	if stats.RecentContributors < 2 {
+		recentEmoji = "🔴"
+	} else if stats.RecentContributors < 5 {
+		recentEmoji = "🟡"
+	}
+
+	md.WriteString(fmt.Sprintf("## %s Bus Factor: **%d** (critical if < 2, warning if < 4)\n\n",
+		busFactorEmoji, stats.BusFactor))
+
+	md.WriteString(fmt.Sprintf("## %s Active Contributor Ratio: **%.1f%%** (contributors with >1%% contribution, critical if < 30%%, warning if < 50%%)\n\n",
+		activityEmoji, stats.ContributorActivity))
+
+	md.WriteString(fmt.Sprintf("## %s Recent Contributors: **%d** (active in last 3 months, critical if < 2, warning if < 5)\n\n",
+		recentEmoji, stats.RecentContributors))
+
 	md.WriteString(fmt.Sprintf("Total Commits: %d\n\n", stats.TotalCommits))
 
 	md.WriteString("## Contributors\n\n")

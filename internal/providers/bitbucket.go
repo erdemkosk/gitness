@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type BitbucketCommit struct {
 	Author struct {
 		Raw string `json:"raw"`
 	} `json:"author"`
+	Date string `json:"date"` // Bitbucket API'den commit tarihi
 }
 
 type BitbucketResponse struct {
@@ -33,12 +35,12 @@ func NewBitbucketProvider(username, password string) *BitbucketProvider {
 	}
 }
 
-func (b *BitbucketProvider) FetchCommits(owner, repo string) (map[string]int, error) {
+func (b *BitbucketProvider) FetchCommits(owner, repo string) (map[string]CommitInfo, error) {
 	if owner == "" || repo == "" {
 		return nil, fmt.Errorf("owner and repo cannot be empty")
 	}
 	ctx := context.Background()
-	authorStats := make(map[string]int)
+	authorStats := make(map[string]CommitInfo)
 	pageUrl := fmt.Sprintf("https://api.bitbucket.org/2.0/repositories/%s/%s/commits", owner, repo)
 
 	for pageUrl != "" {
@@ -68,10 +70,20 @@ func (b *BitbucketProvider) FetchCommits(owner, repo string) (map[string]int, er
 			author := commit.Author.Raw
 			// Bitbucket author format: "Name <email@example.com>"
 			if name := strings.Split(author, " <"); len(name) > 0 {
-				authorStats[name[0]]++
-			} else {
-				authorStats[author]++
+				author = name[0]
 			}
+
+			commitDate, err := time.Parse(time.RFC3339, commit.Date)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse commit date: %v", err)
+			}
+
+			info := authorStats[author]
+			info.Count++
+			if commitDate.After(info.LastCommit) {
+				info.LastCommit = commitDate
+			}
+			authorStats[author] = info
 		}
 
 		pageUrl = response.Next

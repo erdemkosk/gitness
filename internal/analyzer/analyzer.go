@@ -3,6 +3,7 @@ package analyzer
 import (
 	"fmt"
 	"sort"
+	"time"
 
 	"github.com/erdemkosk/gitness/internal/models"
 	"github.com/erdemkosk/gitness/internal/providers"
@@ -36,17 +37,18 @@ func (ra *RepositoryAnalyzer) Analyze(owner, repo string) (*models.RepositorySta
 	}
 
 	total := 0
-	for _, count := range stats {
-		total += count
+	for _, info := range stats {
+		total += info.Count
 	}
 
 	var contributors []models.Contributor
-	for author, count := range stats {
-		percentage := float64(count) * 100 / float64(total)
+	for author, info := range stats {
+		percentage := float64(info.Count) * 100 / float64(total)
 		contributors = append(contributors, models.Contributor{
 			Name:       author,
-			Commits:    count,
+			Commits:    info.Count,
 			Percentage: percentage,
+			LastCommit: info.LastCommit,
 		})
 	}
 
@@ -55,23 +57,40 @@ func (ra *RepositoryAnalyzer) Analyze(owner, repo string) (*models.RepositorySta
 		return contributors[i].Commits > contributors[j].Commits
 	})
 
+	activeContributors := 0
+	recentContributors := 0
+	threeMonthsAgo := time.Now().AddDate(0, -3, 0)
+
+	for _, contributor := range contributors {
+		if contributor.Percentage >= 1.0 {
+			activeContributors++
+		}
+		if contributor.LastCommit.After(threeMonthsAgo) {
+			recentContributors++
+		}
+	}
+
+	contributorActivity := float64(activeContributors) / float64(len(contributors)) * 100
+
 	return &models.RepositoryStats{
-		Owner:        owner,
-		Repo:         repo,
-		Contributors: contributors,
-		BusFactor:    calculateBusFactor(stats),
-		TotalCommits: total,
+		Owner:               owner,
+		Repo:                repo,
+		Contributors:        contributors,
+		BusFactor:           calculateBusFactor(stats),
+		TotalCommits:        total,
+		ContributorActivity: contributorActivity,
+		RecentContributors:  recentContributors,
 	}, nil
 }
 
-func calculateBusFactor(stats map[string]int) int {
+func calculateBusFactor(stats map[string]providers.CommitInfo) int {
 	if len(stats) == 0 {
 		return 0
 	}
 
 	var total int
-	for _, count := range stats {
-		total += count
+	for _, info := range stats {
+		total += info.Count
 	}
 
 	type authorStat struct {
@@ -80,8 +99,8 @@ func calculateBusFactor(stats map[string]int) int {
 	}
 
 	var statsList []authorStat
-	for author, count := range stats {
-		percentage := float64(count) * 100 / float64(total)
+	for author, info := range stats {
+		percentage := float64(info.Count) * 100 / float64(total)
 		statsList = append(statsList, authorStat{author, percentage})
 	}
 

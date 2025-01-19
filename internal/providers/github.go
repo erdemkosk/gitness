@@ -20,7 +20,7 @@ func NewGitHubProvider(token string) *GitHubProvider {
 	}
 }
 
-func (g *GitHubProvider) FetchCommits(owner, repo string) (map[string]int, error) {
+func (g *GitHubProvider) FetchCommits(owner, repo string) (map[string]CommitInfo, error) {
 	var query struct {
 		Repository struct {
 			DefaultBranchRef struct {
@@ -36,6 +36,7 @@ func (g *GitHubProvider) FetchCommits(owner, repo string) (map[string]int, error
 									Name  string
 									Email string
 								}
+								CommittedDate githubv4.DateTime
 							}
 						} `graphql:"history(first: $limit, after: $after)"`
 					} `graphql:"... on Commit"`
@@ -51,7 +52,7 @@ func (g *GitHubProvider) FetchCommits(owner, repo string) (map[string]int, error
 		"after": (*githubv4.String)(nil),
 	}
 
-	authorStats := make(map[string]int)
+	authorStats := make(map[string]CommitInfo)
 	hasNextPage := true
 
 	for hasNextPage {
@@ -65,7 +66,12 @@ func (g *GitHubProvider) FetchCommits(owner, repo string) (map[string]int, error
 			if author == "" {
 				author = commit.Author.Email
 			}
-			authorStats[author]++
+			info := authorStats[author]
+			info.Count++
+			if commit.CommittedDate.Time.After(info.LastCommit) {
+				info.LastCommit = commit.CommittedDate.Time
+			}
+			authorStats[author] = info
 		}
 
 		hasNextPage = query.Repository.DefaultBranchRef.Target.Commit.History.PageInfo.HasNextPage

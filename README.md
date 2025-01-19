@@ -7,11 +7,35 @@ Gitness - Your repo's fitness witness! Track your bus factor before your code mi
 ## Features
 
 - Calculate repository bus factor
-- Analyze contributor statistics
+- Analyze contributor statistics and activity patterns
+- Track recent contributor engagement
 - Support for multiple VCS providers (GitHub, Bitbucket)
 - Multiple output formats (Console, JSON, Markdown)
 - CI/CD pipeline integration
 - Docker support
+
+## Metrics Explained
+
+### Bus Factor 🚌
+The "Bus Factor" represents the minimum number of developers that would need to be hit by a bus (or win the lottery) before the project is in serious trouble. It's calculated based on the number of contributors who collectively account for 80% of the project's contributions.
+
+- 🔴 Critical (< 2): Project knowledge is dangerously concentrated
+- 🟡 Warning (2-3): Limited knowledge distribution
+- 🟢 Good (≥ 4): Healthy knowledge distribution
+
+### Active Contributor Ratio 👥
+Percentage of contributors who have made significant contributions (>1% of total commits). This metric helps identify the real active contributor base versus occasional contributors.
+
+- 🔴 Critical (< 30%): Most contributors are occasional
+- 🟡 Warning (30-50%): Moderate active participation
+- 🟢 Good (≥ 50%): Healthy active community
+
+### Recent Contributors 📅
+Number of unique contributors who have made commits in the last 3 months. This metric helps assess the current activity level and project momentum.
+
+- 🔴 Critical (< 2): Project might be stagnating
+- 🟡 Warning (2-4): Limited recent activity
+- 🟢 Good (≥ 5): Active development
 
 ## Installation
 
@@ -81,12 +105,14 @@ jobs:
         id: analysis
 ```
 
-## Output Formats
+## Output Examples
 
 ### Console (default)
 ```
 Repo: user/repo
-Bus Factor: 3
+Bus Factor: 🟢 3 (critical if < 2, warning if < 4)
+Active Contributor Ratio: 🟡 45.5% (critical if < 30%, warning if < 50%)
+Recent Contributors: 🔴 1 (active in last 3 months)
 
 Contributors:
 ------------------
@@ -102,6 +128,8 @@ Bob Johnson: 80 commits (24.2%)
   "repo": "repo",
   "busFactor": 3,
   "totalCommits": 330,
+  "contributorActivity": 45.5,
+  "recentContributors": 1,
   "contributors": [
     {
       "name": "John Doe",
@@ -116,7 +144,9 @@ Bob Johnson: 80 commits (24.2%)
 ```markdown
 # Repository Analysis: user/repo
 
-## Bus Factor: 3
+## 🟢 Bus Factor: **3** (critical if < 2, warning if < 4)
+## 🟡 Active Contributor Ratio: **45.5%** (critical if < 30%, warning if < 50%)
+## 🔴 Recent Contributors: **1** (active in last 3 months)
 
 Total Commits: 330
 

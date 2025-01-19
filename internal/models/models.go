@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 )
 
 type Author struct {
@@ -19,14 +20,17 @@ type Contributor struct {
 	Name       string
 	Commits    int
 	Percentage float64
+	LastCommit time.Time
 }
 
 type RepositoryStats struct {
-	Owner        string
-	Repo         string
-	Contributors []Contributor
-	BusFactor    int
-	TotalCommits int
+	Owner               string
+	Repo                string
+	Contributors        []Contributor
+	BusFactor           int
+	TotalCommits        int
+	ContributorActivity float64
+	RecentContributors  int
 }
 
 func (rs *RepositoryStats) Print() {
