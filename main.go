@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/erdemkosk/gitness/internal/analyzer"
 	"github.com/erdemkosk/gitness/internal/output"
@@ -12,20 +13,37 @@ import (
 	"github.com/joho/godotenv"
 )
 
+func getRepositoryURL() (string, error) {
+	// First try command line argument
+	args := flag.Args()
+	if len(args) == 1 {
+		return args[0], nil
+	}
+
+	// If no args, try environment variable
+	if url := os.Getenv("REPOSITORY_URL"); url != "" {
+		return url, nil
+	}
+
+	return "", fmt.Errorf("please provide repository URL either as argument or set REPOSITORY_URL environment variable")
+}
+
 func main() {
 	outputFormat := flag.String("output", "console", "Output format: console, json, or markdown")
 	flag.Parse()
 
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		// Ignore .env file error in Docker environment
+		if !os.IsNotExist(err) {
+			log.Printf("Warning: Error loading .env file: %v", err)
+		}
 	}
 
-	args := flag.Args()
-	if len(args) != 1 {
-		log.Fatal("Please provide repository URL as an argument")
+	url, err := getRepositoryURL()
+	if err != nil {
+		log.Fatal(err)
 	}
-	url := args[0]
 
 	repoInfo, err := util.ParseRepositoryURL(url)
 	if err != nil {
