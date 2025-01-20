@@ -29,25 +29,21 @@ func getRepositoryURL() (string, error) {
 }
 
 func main() {
-	// Command line flag has higher priority
 	outputFormat := flag.String("output", "", "Output format: console, json, or markdown")
 	flag.Parse()
 
 	err := godotenv.Load()
 	if err != nil {
-		// Ignore .env file error in Docker environment
 		if !os.IsNotExist(err) {
 			log.Printf("Warning: Error loading .env file: %v", err)
 		}
 	}
 
-	// If output format is not provided via flag, check environment variable
 	if *outputFormat == "" {
 		envFormat := os.Getenv("OUTPUT_FORMAT")
 		if envFormat != "" {
 			*outputFormat = envFormat
 		} else {
-			// Default to console if not specified anywhere
 			*outputFormat = "console"
 		}
 	}

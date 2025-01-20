@@ -14,14 +14,28 @@ type RepoInfo struct {
 }
 
 func ParseRepositoryURL(url string) (*RepoInfo, error) {
+	url = strings.TrimSpace(url)
+
+	url = strings.TrimSuffix(url, ".git")
+
 	parts := strings.Split(url, "/")
 	if len(parts) < 2 {
-		return nil, fmt.Errorf("invalid repository URL")
+		return nil, fmt.Errorf("invalid repository URL: %s", url)
+	}
+
+	owner := parts[len(parts)-2]
+	repo := parts[len(parts)-1]
+
+	owner = strings.TrimSpace(owner)
+	repo = strings.TrimSpace(repo)
+
+	if owner == "" || repo == "" {
+		return nil, fmt.Errorf("owner or repo cannot be empty. URL: %s", url)
 	}
 
 	info := &RepoInfo{
-		Owner: parts[len(parts)-2],
-		Repo:  parts[len(parts)-1],
+		Owner: owner,
+		Repo:  repo,
 	}
 
 	if strings.Contains(url, "github.com") {
@@ -30,13 +44,19 @@ func ParseRepositoryURL(url string) (*RepoInfo, error) {
 			"token": os.Getenv("GITHUB_TOKEN"),
 		}
 	} else if strings.Contains(url, "bitbucket.org") {
+		clientID := os.Getenv("BITBUCKET_CLIENT_ID")
+		clientSecret := os.Getenv("BITBUCKET_CLIENT_SECRET")
+		if clientID == "" || clientSecret == "" {
+			return nil, fmt.Errorf("BITBUCKET_CLIENT_ID and BITBUCKET_CLIENT_SECRET environment variables are required for Bitbucket")
+		}
+
 		info.ProviderType = "bitbucket"
 		info.Config = map[string]string{
-			"username": os.Getenv("BITBUCKET_USERNAME"),
-			"password": os.Getenv("BITBUCKET_PASSWORD"),
+			"clientID":     clientID,
+			"clientSecret": clientSecret,
 		}
 	} else {
-		return nil, fmt.Errorf("unsupported repository host")
+		return nil, fmt.Errorf("unsupported repository provider: %s", url)
 	}
 
 	return info, nil

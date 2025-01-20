@@ -20,15 +20,20 @@ func NewProviderFactory() *ProviderFactory {
 	})
 
 	factory.Register("bitbucket", func(config map[string]string) (CommitProvider, error) {
-		username, exists := config["username"]
+		clientID, exists := config["clientID"]
 		if !exists {
-			return nil, fmt.Errorf("BITBUCKET_USERNAME is required")
+			return nil, fmt.Errorf("BITBUCKET_CLIENT_ID is required")
 		}
-		password, exists := config["password"]
+		clientSecret, exists := config["clientSecret"]
 		if !exists {
-			return nil, fmt.Errorf("BITBUCKET_PASSWORD is required")
+			return nil, fmt.Errorf("BITBUCKET_CLIENT_SECRET is required")
 		}
-		return NewBitbucketProvider(username, password), nil
+
+		provider, err := NewBitbucketProvider(clientID, clientSecret)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create Bitbucket provider: %v", err)
+		}
+		return provider, nil
 	})
 
 	return factory

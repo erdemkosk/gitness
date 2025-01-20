@@ -72,9 +72,31 @@ gitness
 
 - `REPOSITORY_URL`: Target repository URL
 - `GITHUB_TOKEN`: GitHub personal access token
-- `BITBUCKET_USERNAME`: Bitbucket username
-- `BITBUCKET_PASSWORD`: Bitbucket app password
+- `BITBUCKET_CLIENT_ID`: Bitbucket OAuth client ID
+- `BITBUCKET_CLIENT_SECRET`: Bitbucket OAuth client secret
 - `OUTPUT_FORMAT`: Output format (console, json, markdown)
+
+### Repository URL Formats
+
+#### GitHub
+```
+https://github.com/username/repository
+```
+
+#### Bitbucket
+```
+https://bitbucket.org/workspace/repository
+```
+
+### Authentication
+
+#### GitHub
+Generate a personal access token from GitHub Settings > Developer Settings > Personal Access Tokens.
+
+#### Bitbucket
+1. Go to Bitbucket Settings > OAuth Consumers
+2. Create a new OAuth consumer
+3. Use the Client ID and Client Secret in your environment variables
 
 ### CI/CD Integration
 
@@ -191,7 +213,6 @@ Total Commits: 330
 |------|---------|------------|
 | John Doe | 150 | 45.5% |
 ```
-
 ## Architecture
 
 - Clean architecture principles
@@ -207,3 +228,4 @@ Total Commits: 330
 3. Commit your changes
 4. Push to the branch
 5. Create a new Pull Request
+

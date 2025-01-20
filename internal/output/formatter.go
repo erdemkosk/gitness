@@ -1,6 +1,10 @@
 package output
 
-import "github.com/erdemkosk/gitness/internal/models"
+import (
+	"fmt"
+
+	"github.com/erdemkosk/gitness/internal/models"
+)
 
 type Formatter interface {
 	Format(*models.RepositoryStats) (string, error)
@@ -28,6 +32,7 @@ func (f *FormatterFactory) Register(name string, formatter Formatter) {
 }
 
 func (f *FormatterFactory) GetFormatter(format string) (Formatter, bool) {
+	fmt.Println(format)
 	formatter, exists := f.formatters[format]
 	return formatter, exists
 }
