@@ -15,6 +15,12 @@ func (f *MarkdownFormatter) Format(stats *models.RepositoryStats) (string, error
 	md.WriteString("![Gitness](https://github.com/erdemkosk/gitness/blob/master/logo.png?raw=true)\n\n")
 	md.WriteString(fmt.Sprintf("# Repository Analysis: %s/%s\n\n", stats.Owner, stats.Repo))
 
+	if stats.AnalysisDuration != "" {
+		md.WriteString(fmt.Sprintf("## 📅 Analysis Period: Last %s\n\n", stats.AnalysisDuration))
+	} else {
+		md.WriteString("## 📅 Analysis Period: All Time\n\n")
+	}
+
 	// Bus Factor status
 	busFactorEmoji := "🟢"
 	if stats.BusFactor < 2 {
@@ -39,8 +45,19 @@ func (f *MarkdownFormatter) Format(stats *models.RepositoryStats) (string, error
 		recentEmoji = "🟡"
 	}
 
+	// Knowledge Distribution status
+	scoreEmoji := "🟢"
+	if stats.KnowledgeScore < 25 {
+		scoreEmoji = "🔴"
+	} else if stats.KnowledgeScore < 50 {
+		scoreEmoji = "🟡"
+	}
+
 	md.WriteString(fmt.Sprintf("## %s Bus Factor: **%d** (critical if < 2, warning if < 4)\n\n",
 		busFactorEmoji, stats.BusFactor))
+
+	md.WriteString(fmt.Sprintf("## %s Knowledge Distribution Score: **%.1f** (0-100, higher is better)\n\n",
+		scoreEmoji, stats.KnowledgeScore))
 
 	md.WriteString(fmt.Sprintf("## %s Active Contributor Ratio: **%.1f%%** (contributors with >1%% contribution, critical if < 30%%, warning if < 50%%)\n\n",
 		activityEmoji, stats.ContributorActivity))

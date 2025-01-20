@@ -1,8 +1,6 @@
 package output
 
 import (
-	"fmt"
-
 	"github.com/erdemkosk/gitness/internal/models"
 )
 
@@ -32,7 +30,6 @@ func (f *FormatterFactory) Register(name string, formatter Formatter) {
 }
 
 func (f *FormatterFactory) GetFormatter(format string) (Formatter, bool) {
-	fmt.Println(format)
 	formatter, exists := f.formatters[format]
 	return formatter, exists
 }

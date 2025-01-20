@@ -4,13 +4,20 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 )
+
+type Duration struct {
+	Value int
+	Unit  string // "day", "month", "year"
+}
 
 type RepoInfo struct {
 	Owner        string
 	Repo         string
 	ProviderType string
 	Config       map[string]string
+	Duration     *Duration
 }
 
 func ParseRepositoryURL(url string) (*RepoInfo, error) {
@@ -60,4 +67,41 @@ func ParseRepositoryURL(url string) (*RepoInfo, error) {
 	}
 
 	return info, nil
+}
+
+func ParseDuration(duration string) (*Duration, error) {
+	if duration == "" {
+		return nil, nil
+	}
+
+	var value int
+	var unit string
+	_, err := fmt.Sscanf(duration, "%d%s", &value, &unit)
+	if err != nil {
+		return nil, fmt.Errorf("invalid duration format. Use: 6m, 1y, 30d")
+	}
+
+	switch unit {
+	case "d", "day", "days":
+		return &Duration{Value: value, Unit: "day"}, nil
+	case "m", "month", "months":
+		return &Duration{Value: value, Unit: "month"}, nil
+	case "y", "year", "years":
+		return &Duration{Value: value, Unit: "year"}, nil
+	default:
+		return nil, fmt.Errorf("invalid duration unit. Use: d(days), m(months), y(years)")
+	}
+}
+
+func (d *Duration) ToTime() time.Time {
+	now := time.Now()
+	switch d.Unit {
+	case "day":
+		return now.AddDate(0, 0, -d.Value)
+	case "month":
+		return now.AddDate(0, -d.Value, 0)
+	case "year":
+		return now.AddDate(-d.Value, 0, 0)
+	}
+	return now
 }

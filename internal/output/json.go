@@ -17,14 +17,18 @@ func (f *JSONFormatter) Format(stats *models.RepositoryStats) (string, error) {
 		Contributors        []models.Contributor `json:"contributors"`
 		ContributorActivity float64              `json:"contributorActivity"` // Percentage of contributors with >1% contribution
 		RecentContributors  int                  `json:"recentContributors"`  // Number of contributors active in last 3 months
+		KnowledgeScore      float64              `json:"knowledgeScore"`
+		AnalysisDuration    string               `json:"analysisDuration,omitempty"`
 	}{
 		Owner:               stats.Owner,
 		Repo:                stats.Repo,
 		BusFactor:           stats.BusFactor,
+		KnowledgeScore:      stats.KnowledgeScore,
 		TotalCommits:        stats.TotalCommits,
 		Contributors:        stats.Contributors,
 		ContributorActivity: stats.ContributorActivity,
 		RecentContributors:  stats.RecentContributors,
+		AnalysisDuration:    stats.AnalysisDuration,
 	}
 
 	jsonData, err := json.MarshalIndent(data, "", "  ")

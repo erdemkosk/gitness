@@ -31,6 +31,8 @@ type RepositoryStats struct {
 	TotalCommits        int
 	ContributorActivity float64
 	RecentContributors  int
+	KnowledgeScore      float64
+	AnalysisDuration    string
 }
 
 func (rs *RepositoryStats) Print() {

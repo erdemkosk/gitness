@@ -26,6 +26,12 @@ func (f *ConsoleFormatter) Format(stats *models.RepositoryStats) (string, error)
 
 	output.WriteString(fmt.Sprintf("\nRepo: %s/%s\n", stats.Owner, stats.Repo))
 
+	if stats.AnalysisDuration != "" {
+		output.WriteString(fmt.Sprintf("\nAnalysis Period: Last %s\n", stats.AnalysisDuration))
+	} else {
+		output.WriteString("\nAnalysis Period: All Time\n")
+	}
+
 	// ANSI color codes
 	red := "\033[31m"
 	yellow := "\033[33m"
@@ -59,6 +65,9 @@ func (f *ConsoleFormatter) Format(stats *models.RepositoryStats) (string, error)
 	output.WriteString(fmt.Sprintf("Bus Factor: %s%d%s (critical if < 2, warning if < 4)\n",
 		busFactorColor, stats.BusFactor, reset))
 
+	output.WriteString(fmt.Sprintf("Knowledge Distribution Score: %s%.1f%s (0-100, higher is better)\n",
+		getScoreColor(stats.KnowledgeScore), stats.KnowledgeScore, reset))
+
 	output.WriteString(fmt.Sprintf("Active Contributor Ratio: %s%.1f%%%s (contributors with >1%% contribution, critical if < 30%%, warning if < 50%%)\n",
 		activityColor, stats.ContributorActivity, reset))
 
@@ -74,4 +83,13 @@ func (f *ConsoleFormatter) Format(stats *models.RepositoryStats) (string, error)
 	}
 
 	return output.String(), nil
+}
+
+func getScoreColor(score float64) string {
+	if score < 25 {
+		return "\033[31m" // red
+	} else if score < 50 {
+		return "\033[33m" // yellow
+	}
+	return "\033[32m" // green
 }

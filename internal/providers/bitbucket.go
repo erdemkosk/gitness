@@ -9,6 +9,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/erdemkosk/gitness/internal/util"
 )
 
 type BitbucketProvider struct {
@@ -80,14 +82,21 @@ func getOAuthToken(clientID, clientSecret string) (string, error) {
 	return tokenResp.AccessToken, nil
 }
 
-func (b *BitbucketProvider) FetchCommits(owner, repo string) (map[string]CommitInfo, error) {
-	if owner == "" || repo == "" {
-		return nil, fmt.Errorf("owner and repo cannot be empty")
-	}
-
+func (b *BitbucketProvider) FetchCommits(owner, repo string, duration string) (map[string]CommitInfo, error) {
 	authorStats := make(map[string]CommitInfo)
 
 	pageURL := fmt.Sprintf("https://api.bitbucket.org/2.0/repositories/%s/%s/commits?pagelen=100", owner, repo)
+
+	var since *time.Time
+	if duration != "" {
+		dur, err := util.ParseDuration(duration)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse duration: %w", err)
+		}
+		t := dur.ToTime()
+		since = &t
+		pageURL += fmt.Sprintf("&since=%s", t.Format(time.RFC3339))
+	}
 
 	for pageURL != "" {
 		commits, nextPage, err := b.fetchPage(pageURL)
@@ -96,12 +105,16 @@ func (b *BitbucketProvider) FetchCommits(owner, repo string) (map[string]CommitI
 		}
 
 		for _, commit := range commits {
-			author := b.extractAuthorName(commit)
 			commitDate, err := time.Parse(time.RFC3339, commit.Date)
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse commit date: %v", err)
 			}
 
+			if since != nil && commitDate.Before(*since) {
+				continue
+			}
+
+			author := b.extractAuthorName(commit)
 			info := authorStats[author]
 			info.Count++
 			if commitDate.After(info.LastCommit) {

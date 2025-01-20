@@ -30,6 +30,7 @@ func getRepositoryURL() (string, error) {
 
 func main() {
 	outputFormat := flag.String("output", "", "Output format: console, json, or markdown")
+	duration := flag.String("duration", "", "Analyze commits for last duration (e.g., 6m, 1y, 30d)")
 	flag.Parse()
 
 	err := godotenv.Load()
@@ -46,6 +47,10 @@ func main() {
 		} else {
 			*outputFormat = "console"
 		}
+	}
+
+	if *duration != "" {
+		os.Setenv("COMMIT_HISTORY_DURATION", *duration)
 	}
 
 	url, err := getRepositoryURL()
@@ -65,7 +70,7 @@ func main() {
 	}
 
 	repoAnalyzer := analyzer.NewRepositoryAnalyzer(provider)
-	stats, err := repoAnalyzer.Analyze(repoInfo.Owner, repoInfo.Repo)
+	stats, err := repoAnalyzer.Analyze(repoInfo.Owner, repoInfo.Repo, *duration)
 	if err != nil {
 		log.Fatal(err)
 	}

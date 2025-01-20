@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"fmt"
+	"math"
 	"sort"
 	"time"
 
@@ -22,12 +23,12 @@ func NewRepositoryAnalyzer(provider providers.CommitProvider) *RepositoryAnalyze
 	}
 }
 
-func (ra *RepositoryAnalyzer) Analyze(owner, repo string) (*models.RepositoryStats, error) {
+func (ra *RepositoryAnalyzer) Analyze(owner, repo string, duration string) (*models.RepositoryStats, error) {
 	if owner == "" || repo == "" {
 		return nil, fmt.Errorf("owner and repo cannot be empty")
 	}
 
-	stats, err := ra.provider.FetchCommits(owner, repo)
+	stats, err := ra.provider.FetchCommits(owner, repo, duration)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch commits: %w", err)
 	}
@@ -72,6 +73,9 @@ func (ra *RepositoryAnalyzer) Analyze(owner, repo string) (*models.RepositorySta
 
 	contributorActivity := float64(activeContributors) / float64(len(contributors)) * 100
 
+	// Knowledge Distribution Score hesaplama
+	knowledgeScore := calculateKnowledgeDistribution(stats)
+
 	return &models.RepositoryStats{
 		Owner:               owner,
 		Repo:                repo,
@@ -80,6 +84,8 @@ func (ra *RepositoryAnalyzer) Analyze(owner, repo string) (*models.RepositorySta
 		TotalCommits:        total,
 		ContributorActivity: contributorActivity,
 		RecentContributors:  recentContributors,
+		KnowledgeScore:      knowledgeScore,
+		AnalysisDuration:    duration,
 	}, nil
 }
 
@@ -119,4 +125,31 @@ func calculateBusFactor(stats map[string]providers.CommitInfo) int {
 	}
 
 	return busFactor
+}
+
+func calculateKnowledgeDistribution(stats map[string]providers.CommitInfo) float64 {
+	if len(stats) == 0 {
+		return 0
+	}
+
+	var total int
+	for _, info := range stats {
+		total += info.Count
+	}
+
+	var sumDifferences float64
+	var n = float64(len(stats))
+
+	for _, info1 := range stats {
+		percent1 := float64(info1.Count) / float64(total)
+		for _, info2 := range stats {
+			percent2 := float64(info2.Count) / float64(total)
+			sumDifferences += math.Abs(percent1 - percent2)
+		}
+	}
+
+	gini := sumDifferences / (2 * n * n)
+	knowledgeScore := (1 - gini) * 100
+
+	return math.Round(knowledgeScore*100) / 100
 }

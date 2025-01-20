@@ -6,36 +6,90 @@ Gitness - Your repo's fitness witness! Track your bus factor before your code mi
 
 ## Features
 
-- Calculate repository bus factor
+- Calculate repository bus factor and knowledge distribution
 - Analyze contributor statistics and activity patterns
 - Track recent contributor engagement
 - Support for multiple VCS providers (GitHub, Bitbucket)
 - Multiple output formats (Console, JSON, Markdown)
+- Configurable analysis period (e.g., 6m, 1y, 30d)
 - CI/CD pipeline integration
 - Docker support
+
+## Usage
+
+```bash
+# Analyze all time
+gitness https://github.com/user/repo
+
+# Analyze last 6 months
+gitness --duration 6m https://github.com/user/repo
+
+# Analyze last 1 year with JSON output
+gitness --duration 1y --output json https://github.com/user/repo
+
+# Analyze last 30 days
+gitness --duration 30d https://github.com/user/repo
+```
 
 ## Metrics Explained
 
 ### Bus Factor 🚌
-The "Bus Factor" represents the minimum number of developers that would need to be hit by a bus (or win the lottery) before the project is in serious trouble. It's calculated based on the number of contributors who collectively account for 80% of the project's contributions.
+The "Bus Factor" represents the minimum number of developers that would need to be hit by a bus before the project is in serious trouble. It's calculated based on contributors who collectively account for 80% of contributions.
 
 - 🔴 Critical (< 2): Project knowledge is dangerously concentrated
 - 🟡 Warning (2-3): Limited knowledge distribution
 - 🟢 Good (≥ 4): Healthy knowledge distribution
 
+### Knowledge Distribution Score 📊
+Measures how evenly the knowledge is distributed across all contributors (0-100).
+
+- 🔴 Critical (< 25): Knowledge is heavily concentrated
+- 🟡 Warning (25-50): Moderate knowledge concentration
+- 🟢 Good (> 50): Well-distributed knowledge
+
 ### Active Contributor Ratio 👥
-Percentage of contributors who have made significant contributions (>1% of total commits). This metric helps identify the real active contributor base versus occasional contributors.
+Percentage of contributors who have made significant contributions (>1% of total commits).
 
 - 🔴 Critical (< 30%): Most contributors are occasional
 - 🟡 Warning (30-50%): Moderate active participation
-- 🟢 Good (≥ 50%): Healthy active community
+- 🟢 Good (> 50%): Healthy active participation
 
-### Recent Contributors 📅
-Number of unique contributors who have made commits in the last 3 months. This metric helps assess the current activity level and project momentum.
+### Recent Contributors 🕒
+Number of contributors active in last 3 months.
 
-- 🔴 Critical (< 2): Project might be stagnating
-- 🟡 Warning (2-4): Limited recent activity
-- 🟢 Good (≥ 5): Active development
+- 🔴 Critical (< 2): Low recent activity
+- 🟡 Warning (2-4): Moderate recent activity
+- 🟢 Good (≥ 5): High recent activity
+
+## Example Output
+
+```
+Repository Analysis: user/repo
+Analysis Period: Last 6 months
+
+🟢 Bus Factor: 4 (critical if < 2, warning if < 4)
+🟢 Knowledge Distribution Score: 75.5 (0-100, higher is better)
+🟡 Active Contributor Ratio: 45.5% (critical if < 30%, warning if < 50%)
+🟢 Recent Contributors: 6 (active in last 3 months)
+
+Total Commits: 330
+
+Contributors:
+------------------
+John Doe: 100 commits (30.3%)
+Jane Smith: 90 commits (27.3%)
+Bob Wilson: 80 commits (24.2%)
+Alice Brown: 60 commits (18.2%)
+```
+
+## Environment Variables
+
+```bash
+GITHUB_TOKEN=your_token
+BITBUCKET_CLIENT_ID=your_client_id
+BITBUCKET_CLIENT_SECRET=your_client_secret
+COMMIT_HISTORY_DURATION=6m  # Optional: 6m, 1y, 30d etc.
+```
 
 ## Installation
 
@@ -50,22 +104,6 @@ docker run \                                                                    
   -e GITHUB_TOKEN="TOKEN" \
   -e REPOSITORY_URL="https://github.com/user/repo" \
   gitness --output json;
-```
-## Usage
-
-### Command Line
-```bash
-gitness https://github.com/user/repo
-```
-### With output format
-```bash
-gitness --output json https://github.com/user/repo
-```
-### Using environment variables
-```bash
-export REPOSITORY_URL="https://github.com/user/repo"
-export GITHUB_TOKEN="your_token"
-gitness
 ```
 
 ### Environment Variables
@@ -160,59 +198,6 @@ jobs:
 
 [Example GitHub Action Run](https://github.com/erdemkosk/stock-exchange/actions/runs/12857735422)
 
-
-
-## Output Examples
-
-### Console (default)
-```
-Repo: user/repo
-Bus Factor: 🟢 3 (critical if < 2, warning if < 4)
-Active Contributor Ratio: 🟡 45.5% (critical if < 30%, warning if < 50%)
-Recent Contributors: 🔴 1 (active in last 3 months)
-
-Contributors:
-------------------
-John Doe: 150 commits (45.5%)
-Jane Smith: 100 commits (30.3%)
-Bob Johnson: 80 commits (24.2%)
-```
-
-### JSON
-```json
-{
-  "owner": "user",
-  "repo": "repo",
-  "busFactor": 3,
-  "totalCommits": 330,
-  "contributorActivity": 45.5,
-  "recentContributors": 1,
-  "contributors": [
-    {
-      "name": "John Doe",
-      "commits": 150,
-      "percentage": 45.5
-    }
-  ]
-}
-```
-
-### Markdown
-```markdown
-# Repository Analysis: user/repo
-
-## 🟢 Bus Factor: **3** (critical if < 2, warning if < 4)
-## 🟡 Active Contributor Ratio: **45.5%** (critical if < 30%, warning if < 50%)
-## 🔴 Recent Contributors: **1** (active in last 3 months)
-
-Total Commits: 330
-
-## Contributors
-
-| Name | Commits | Percentage |
-|------|---------|------------|
-| John Doe | 150 | 45.5% |
-```
 ## Architecture
 
 - Clean architecture principles
