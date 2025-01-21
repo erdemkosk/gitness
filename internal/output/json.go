@@ -8,33 +8,76 @@ import (
 
 type JSONFormatter struct{}
 
+type jsonOutput struct {
+	Owner    string `json:"owner"`
+	Repo     string `json:"repo"`
+	Analysis struct {
+		Duration            string  `json:"duration"`
+		BusFactor           int     `json:"busFactor"`
+		KnowledgeScore      float64 `json:"knowledgeScore"`
+		ContributorActivity float64 `json:"contributorActivity"`
+		RecentContributors  int     `json:"recentContributors"`
+		TotalCommits        int     `json:"totalCommits"`
+	} `json:"analysis"`
+	CommitFrequency struct {
+		DailyAverage   float64 `json:"dailyAverage"`
+		WeeklyAverage  float64 `json:"weeklyAverage"`
+		MonthlyAverage float64 `json:"monthlyAverage"`
+		MostActiveDay  string  `json:"mostActiveDay"`
+		PeakTime       string  `json:"peakTime"`
+	} `json:"commitFrequency"`
+	Contributors []struct {
+		Name       string  `json:"name"`
+		Commits    int     `json:"commits"`
+		Percentage float64 `json:"percentage"`
+		LastCommit string  `json:"lastCommit"`
+	} `json:"contributors"`
+}
+
 func (f *JSONFormatter) Format(stats *models.RepositoryStats) (string, error) {
-	data := struct {
-		Owner               string               `json:"owner"`
-		Repo                string               `json:"repo"`
-		BusFactor           int                  `json:"busFactor"`
-		TotalCommits        int                  `json:"totalCommits"`
-		Contributors        []models.Contributor `json:"contributors"`
-		ContributorActivity float64              `json:"contributorActivity"` // Percentage of contributors with >1% contribution
-		RecentContributors  int                  `json:"recentContributors"`  // Number of contributors active in last 3 months
-		KnowledgeScore      float64              `json:"knowledgeScore"`
-		AnalysisDuration    string               `json:"analysisDuration,omitempty"`
-	}{
-		Owner:               stats.Owner,
-		Repo:                stats.Repo,
-		BusFactor:           stats.BusFactor,
-		KnowledgeScore:      stats.KnowledgeScore,
-		TotalCommits:        stats.TotalCommits,
-		Contributors:        stats.Contributors,
-		ContributorActivity: stats.ContributorActivity,
-		RecentContributors:  stats.RecentContributors,
-		AnalysisDuration:    stats.AnalysisDuration,
+	output := jsonOutput{
+		Owner: stats.Owner,
+		Repo:  stats.Repo,
 	}
 
-	jsonData, err := json.MarshalIndent(data, "", "  ")
+	output.Analysis.Duration = stats.AnalysisDuration
+	output.Analysis.BusFactor = stats.BusFactor
+	output.Analysis.KnowledgeScore = stats.KnowledgeScore
+	output.Analysis.ContributorActivity = stats.ContributorActivity
+	output.Analysis.RecentContributors = stats.RecentContributors
+	output.Analysis.TotalCommits = stats.TotalCommits
+
+	output.CommitFrequency.DailyAverage = stats.DailyCommitAverage
+	output.CommitFrequency.WeeklyAverage = stats.WeeklyCommitAverage
+	output.CommitFrequency.MonthlyAverage = stats.MonthlyCommitAverage
+	output.CommitFrequency.MostActiveDay = stats.MostActiveDay
+	output.CommitFrequency.PeakTime = stats.MostActiveTime
+
+	output.Contributors = make([]struct {
+		Name       string  `json:"name"`
+		Commits    int     `json:"commits"`
+		Percentage float64 `json:"percentage"`
+		LastCommit string  `json:"lastCommit"`
+	}, len(stats.Contributors))
+
+	for i, c := range stats.Contributors {
+		output.Contributors[i] = struct {
+			Name       string  `json:"name"`
+			Commits    int     `json:"commits"`
+			Percentage float64 `json:"percentage"`
+			LastCommit string  `json:"lastCommit"`
+		}{
+			Name:       c.Name,
+			Commits:    c.Commits,
+			Percentage: c.Percentage,
+			LastCommit: c.LastCommit.Format("2006-01-02"),
+		}
+	}
+
+	jsonBytes, err := json.MarshalIndent(output, "", "  ")
 	if err != nil {
 		return "", err
 	}
 
-	return string(jsonData), nil
+	return string(jsonBytes), nil
 }

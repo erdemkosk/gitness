@@ -67,13 +67,22 @@ func (f *MarkdownFormatter) Format(stats *models.RepositoryStats) (string, error
 
 	md.WriteString(fmt.Sprintf("Total Commits: %d\n\n", stats.TotalCommits))
 
-	md.WriteString("## Contributors\n\n")
-	md.WriteString("| Name | Commits | Percentage |\n")
-	md.WriteString("|------|---------|------------|\n")
+	md.WriteString("\n## 📊 Commit Frequency Analysis\n\n")
+	md.WriteString("| Metric | Value |\n")
+	md.WriteString("|--------|-------|\n")
+	md.WriteString(fmt.Sprintf("| Daily Average | %.2f commits |\n", stats.DailyCommitAverage))
+	md.WriteString(fmt.Sprintf("| Weekly Average | %.2f commits |\n", stats.WeeklyCommitAverage))
+	md.WriteString(fmt.Sprintf("| Monthly Average | %.2f commits |\n", stats.MonthlyCommitAverage))
+	md.WriteString(fmt.Sprintf("| Most Active Day | %s |\n", stats.MostActiveDay))
+	md.WriteString(fmt.Sprintf("| Peak Activity Time | %s |\n", stats.MostActiveTime))
+
+	md.WriteString("\n## 👥 Contributors\n\n")
+	md.WriteString("| Name | Commits | Percentage | Last Commit |\n")
+	md.WriteString("|------|---------|------------|-------------|\n")
 
 	for _, c := range stats.Contributors {
-		md.WriteString(fmt.Sprintf("| %s | %d | %.1f%% |\n",
-			c.Name, c.Commits, c.Percentage))
+		md.WriteString(fmt.Sprintf("| %s | %d | %.1f%% | %s |\n",
+			c.Name, c.Commits, c.Percentage, c.LastCommit.Format("2006-01-02")))
 	}
 
 	return md.String(), nil

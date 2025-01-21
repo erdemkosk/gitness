@@ -23,16 +23,29 @@ type Contributor struct {
 	LastCommit time.Time
 }
 
+type CommitMessageStats struct {
+	Type       string
+	Count      int
+	Percentage float64
+}
+
 type RepositoryStats struct {
-	Owner               string
-	Repo                string
-	Contributors        []Contributor
-	BusFactor           int
-	TotalCommits        int
-	ContributorActivity float64
-	RecentContributors  int
-	KnowledgeScore      float64
-	AnalysisDuration    string
+	Owner                string
+	Repo                 string
+	Contributors         []Contributor
+	BusFactor            int
+	TotalCommits         int
+	ContributorActivity  float64
+	RecentContributors   int
+	KnowledgeScore       float64
+	AnalysisDuration     string
+	CommitMessages       []CommitMessageStats
+	AverageCommitSize    int
+	DailyCommitAverage   float64
+	WeeklyCommitAverage  float64
+	MonthlyCommitAverage float64
+	MostActiveDay        string
+	MostActiveTime       string
 }
 
 func (rs *RepositoryStats) Print() {

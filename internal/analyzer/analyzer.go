@@ -23,6 +23,78 @@ func NewRepositoryAnalyzer(provider providers.CommitProvider) *RepositoryAnalyze
 	}
 }
 
+func (ra *RepositoryAnalyzer) analyzeCommitFrequency(contributors []models.Contributor) (float64, float64, float64, string, string) {
+	if len(contributors) == 0 {
+		return 0, 0, 0, "", ""
+	}
+
+	// Commit zamanlarını topla
+	commitTimes := make(map[time.Time]int)
+	var firstCommit, lastCommit time.Time
+	firstCommit = contributors[0].LastCommit
+	lastCommit = contributors[0].LastCommit
+
+	dayCount := make(map[string]int)
+	hourCount := make(map[int]int)
+
+	for _, contributor := range contributors {
+		commitTime := contributor.LastCommit
+		commitTimes[commitTime] = contributor.Commits
+
+		// En eski ve en yeni commit'i bul
+		if commitTime.Before(firstCommit) {
+			firstCommit = commitTime
+		}
+		if commitTime.After(lastCommit) {
+			lastCommit = commitTime
+		}
+
+		// Gün ve saat istatistikleri
+		dayCount[commitTime.Weekday().String()] += contributor.Commits
+		hourCount[commitTime.Hour()] += contributor.Commits
+	}
+
+	// Zaman aralığını hesapla
+	duration := lastCommit.Sub(firstCommit)
+	days := duration.Hours() / 24
+	if days < 1 {
+		days = 1
+	}
+
+	totalCommits := 0
+	for _, count := range commitTimes {
+		totalCommits += count
+	}
+
+	// Ortalamaları hesapla
+	dailyAvg := float64(totalCommits) / days
+	weeklyAvg := dailyAvg * 7
+	monthlyAvg := dailyAvg * 30
+
+	// En aktif gün ve saati bul
+	mostActiveDay := ""
+	maxDayCount := 0
+	for day, count := range dayCount {
+		if count > maxDayCount {
+			maxDayCount = count
+			mostActiveDay = day
+		}
+	}
+
+	mostActiveHour := 0
+	maxHourCount := 0
+	for hour, count := range hourCount {
+		if count > maxHourCount {
+			maxHourCount = count
+			mostActiveHour = hour
+		}
+	}
+
+	mostActiveTime := fmt.Sprintf("%02d:00", mostActiveHour)
+
+	return dailyAvg, weeklyAvg, monthlyAvg, mostActiveDay, mostActiveTime
+}
+
 func (ra *RepositoryAnalyzer) Analyze(owner, repo string, duration string) (*models.RepositoryStats, error) {
 	if owner == "" || repo == "" {
 		return nil, fmt.Errorf("owner and repo cannot be empty")
@@ -58,6 +130,9 @@ func (ra *RepositoryAnalyzer) Analyze(owner, repo string, duration string) (*mod
 		return contributors[i].Commits > contributors[j].Commits
 	})
 
+	// Commit sıklığı analizini yap
+	dailyAvg, weeklyAvg, monthlyAvg, mostActiveDay, mostActiveTime := ra.analyzeCommitFrequency(contributors)
+
 	activeContributors := 0
 	recentContributors := 0
 	threeMonthsAgo := time.Now().AddDate(0, -3, 0)
@@ -72,20 +147,23 @@ func (ra *RepositoryAnalyzer) Analyze(owner, repo string, duration string) (*mod
 	}
 
 	contributorActivity := float64(activeContributors) / float64(len(contributors)) * 100
-
-	// Knowledge Distribution Score hesaplama
 	knowledgeScore := calculateKnowledgeDistribution(stats)
 
 	return &models.RepositoryStats{
-		Owner:               owner,
-		Repo:                repo,
-		Contributors:        contributors,
-		BusFactor:           calculateBusFactor(stats),
-		TotalCommits:        total,
-		ContributorActivity: contributorActivity,
-		RecentContributors:  recentContributors,
-		KnowledgeScore:      knowledgeScore,
-		AnalysisDuration:    duration,
+		Owner:                owner,
+		Repo:                 repo,
+		Contributors:         contributors,
+		BusFactor:            calculateBusFactor(stats),
+		TotalCommits:         total,
+		ContributorActivity:  contributorActivity,
+		RecentContributors:   recentContributors,
+		KnowledgeScore:       knowledgeScore,
+		AnalysisDuration:     duration,
+		DailyCommitAverage:   math.Round(dailyAvg*100) / 100,
+		WeeklyCommitAverage:  math.Round(weeklyAvg*100) / 100,
+		MonthlyCommitAverage: math.Round(monthlyAvg*100) / 100,
+		MostActiveDay:        mostActiveDay,
+		MostActiveTime:       mostActiveTime,
 	}, nil
 }
 
