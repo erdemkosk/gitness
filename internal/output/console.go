@@ -34,21 +34,14 @@ func (f *ConsoleFormatter) Format(stats *models.RepositoryStats) (string, error)
 `))
 	output.WriteString("\n")
 
-	// Clickable title link
-	output.WriteString("\033]8;;https://github.com/erdemkosk/gitness\033\\")
+	// Title
 	output.WriteString(magenta("Your repo's fitness witness! Track your bus factor before your code misses the bus."))
-	output.WriteString("\033]8;;\033\\") // End of link
 	output.WriteString("\n")
 
-	// Repository link
-	repoUrl := fmt.Sprintf("https://github.com/%s/%s", stats.Owner, stats.Repo)
+	// Repository info
 	output.WriteString(yellow("═══════════════════════════════════════════════════════════════\n\n"))
-
-	// Repository info (clickable)
 	output.WriteString(cyan("📊 Repository: "))
-	output.WriteString("\033]8;;" + repoUrl + "\033\\")
 	output.WriteString(cyan(fmt.Sprintf("%s/%s", stats.Owner, stats.Repo)))
-	output.WriteString("\033]8;;\033\\")
 	output.WriteString("\n")
 	output.WriteString(strings.Repeat("─", 50) + "\n")
 
