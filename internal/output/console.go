@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/erdemkosk/gitness/internal/constants"
 	"github.com/erdemkosk/gitness/internal/models"
 	"github.com/fatih/color"
 )
@@ -41,7 +42,7 @@ func (f *ConsoleFormatter) Format(stats *models.RepositoryStats) (string, error)
 
 	// Repository link
 	repoUrl := fmt.Sprintf("https://github.com/%s/%s", stats.Owner, stats.Repo)
-	output.WriteString(yellow("═══════════════════════════════════════════════════════════════════════════════════\n\n"))
+	output.WriteString(yellow("═══════════════════════════════════════════════════════════════\n\n"))
 
 	// Repository info (clickable)
 	output.WriteString(cyan("📊 Repository: "))
@@ -63,16 +64,16 @@ func (f *ConsoleFormatter) Format(stats *models.RepositoryStats) (string, error)
 	output.WriteString(strings.Repeat("─", 20) + "\n")
 
 	busFactorColor := green
-	if stats.BusFactor < 2 {
+	if stats.BusFactor < constants.BusFactorCriticalThreshold {
 		busFactorColor = red
-	} else if stats.BusFactor < 4 {
+	} else if stats.BusFactor < constants.BusFactorWarningThreshold {
 		busFactorColor = yellow
 	}
 
 	knowledgeScoreColor := green
-	if stats.KnowledgeScore < 25 {
+	if stats.KnowledgeScore < constants.KnowledgeScoreCriticalThreshold {
 		knowledgeScoreColor = red
-	} else if stats.KnowledgeScore < 50 {
+	} else if stats.KnowledgeScore < constants.KnowledgeScoreWarningThreshold {
 		knowledgeScoreColor = yellow
 	}
 
@@ -98,7 +99,7 @@ func (f *ConsoleFormatter) Format(stats *models.RepositoryStats) (string, error)
 	output.WriteString(strings.Repeat("─", 20) + "\n")
 
 	for i, c := range stats.Contributors {
-		if i >= 5 { // Show only top 5 contributors
+		if i >= constants.MaxDisplayedContributors {
 			break
 		}
 		output.WriteString(fmt.Sprintf("👤 %s: %s commits (%s%%)\n",
@@ -107,8 +108,8 @@ func (f *ConsoleFormatter) Format(stats *models.RepositoryStats) (string, error)
 			yellow(fmt.Sprintf("%.1f", c.Percentage))))
 	}
 
-	if len(stats.Contributors) > 5 {
-		output.WriteString(fmt.Sprintf("\n... and %d more contributors\n", len(stats.Contributors)-5))
+	if len(stats.Contributors) > constants.MaxDisplayedContributors {
+		output.WriteString(fmt.Sprintf("\n... and %d more contributors\n", len(stats.Contributors)-constants.MaxDisplayedContributors))
 	}
 
 	// Footer

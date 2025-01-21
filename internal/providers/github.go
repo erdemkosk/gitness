@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/erdemkosk/gitness/internal/constants"
 	"github.com/erdemkosk/gitness/internal/util"
 	"github.com/shurcooL/githubv4"
 	"golang.org/x/oauth2"
@@ -55,7 +56,7 @@ func (g *GitHubProvider) FetchCommits(owner, repo string, duration string) (map[
 		variables := map[string]interface{}{
 			"owner": githubv4.String(owner),
 			"repo":  githubv4.String(repo),
-			"limit": githubv4.Int(100),
+			"limit": githubv4.Int(constants.MaxPageSize),
 			"after": (*githubv4.String)(nil),
 			"since": githubv4.GitTimestamp{Time: dur.ToTime()},
 		}
@@ -117,7 +118,7 @@ func (g *GitHubProvider) FetchCommits(owner, repo string, duration string) (map[
 		variables := map[string]interface{}{
 			"owner": githubv4.String(owner),
 			"repo":  githubv4.String(repo),
-			"limit": githubv4.Int(100),
+			"limit": githubv4.Int(constants.MaxPageSize),
 			"after": (*githubv4.String)(nil),
 		}
 

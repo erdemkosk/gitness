@@ -6,8 +6,10 @@ import (
 	"sort"
 	"time"
 
+	"github.com/erdemkosk/gitness/internal/constants"
 	"github.com/erdemkosk/gitness/internal/models"
 	"github.com/erdemkosk/gitness/internal/providers"
+	"github.com/erdemkosk/gitness/internal/util"
 )
 
 type RepositoryAnalyzer struct {
@@ -23,25 +25,24 @@ func NewRepositoryAnalyzer(provider providers.CommitProvider) *RepositoryAnalyze
 	}
 }
 
-func (ra *RepositoryAnalyzer) analyzeCommitFrequency(contributors []models.Contributor) (float64, float64, float64, string, string) {
+func (ra *RepositoryAnalyzer) analyzeCommitFrequency(contributors []models.Contributor, totalCommits int, duration string) (float64, float64, float64, string, string) {
 	if len(contributors) == 0 {
 		return 0, 0, 0, "", ""
 	}
 
-	// Commit zamanlarını topla
-	commitTimes := make(map[time.Time]int)
-	var firstCommit, lastCommit time.Time
-	firstCommit = contributors[0].LastCommit
-	lastCommit = contributors[0].LastCommit
-
+	// Statistics by day and hour
 	dayCount := make(map[string]int)
 	hourCount := make(map[int]int)
 
+	// Find oldest and newest commit
+	var firstCommit, lastCommit time.Time
+	firstCommit = time.Now()
+	lastCommit = time.Time{}
+
 	for _, contributor := range contributors {
 		commitTime := contributor.LastCommit
-		commitTimes[commitTime] = contributor.Commits
 
-		// En eski ve en yeni commit'i bul
+		// Update oldest and newest commit times
 		if commitTime.Before(firstCommit) {
 			firstCommit = commitTime
 		}
@@ -49,29 +50,42 @@ func (ra *RepositoryAnalyzer) analyzeCommitFrequency(contributors []models.Contr
 			lastCommit = commitTime
 		}
 
-		// Gün ve saat istatistikleri
-		dayCount[commitTime.Weekday().String()] += contributor.Commits
-		hourCount[commitTime.Hour()] += contributor.Commits
+		// Day and hour statistics
+		dayCount[commitTime.Weekday().String()]++
+		hourCount[commitTime.Hour()]++
 	}
 
-	// Zaman aralığını hesapla
-	duration := lastCommit.Sub(firstCommit)
-	days := duration.Hours() / 24
-	if days < 1 {
-		days = 1
+	// Calculate time period
+	var timePeriod time.Duration
+	if duration != "" {
+		// Calculate based on provided duration
+		dur, err := util.ParseDuration(duration)
+		if err == nil {
+			timePeriod = time.Since(dur.ToTime())
+		}
 	}
 
-	totalCommits := 0
-	for _, count := range commitTimes {
-		totalCommits += count
+	if timePeriod == 0 {
+		// If no duration or invalid, use time between first and last commit
+		timePeriod = lastCommit.Sub(firstCommit)
 	}
 
-	// Ortalamaları hesapla
+	// Calculate days, weeks, and months
+	days := math.Max(math.Ceil(timePeriod.Hours()/24), 1)
+	weeks := math.Max(math.Ceil(days/7), 1)
+	months := math.Max(math.Ceil(days/30), 1)
+
+	// Calculate averages
 	dailyAvg := float64(totalCommits) / days
-	weeklyAvg := dailyAvg * 7
-	monthlyAvg := dailyAvg * 30
+	weeklyAvg := float64(totalCommits) / weeks
+	monthlyAvg := float64(totalCommits) / months
 
-	// En aktif gün ve saati bul
+	// Round to 2 decimal places
+	dailyAvg = math.Round(dailyAvg*100) / 100
+	weeklyAvg = math.Round(weeklyAvg*100) / 100
+	monthlyAvg = math.Round(monthlyAvg*100) / 100
+
+	// Find most active day and hour
 	mostActiveDay := ""
 	maxDayCount := 0
 	for day, count := range dayCount {
@@ -97,16 +111,16 @@ func (ra *RepositoryAnalyzer) analyzeCommitFrequency(contributors []models.Contr
 
 func (ra *RepositoryAnalyzer) Analyze(owner, repo string, duration string) (*models.RepositoryStats, error) {
 	if owner == "" || repo == "" {
-		return nil, fmt.Errorf("owner and repo cannot be empty")
+		return nil, fmt.Errorf(constants.ErrEmptyOwnerRepo)
 	}
 
 	stats, err := ra.provider.FetchCommits(owner, repo, duration)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch commits: %w", err)
+		return nil, fmt.Errorf("%s: %w", constants.ErrFailedToFetchCommits, err)
 	}
 
 	if len(stats) == 0 {
-		return nil, fmt.Errorf("no commits found in repository")
+		return nil, fmt.Errorf(constants.ErrNoCommitsFound)
 	}
 
 	total := 0
@@ -125,20 +139,18 @@ func (ra *RepositoryAnalyzer) Analyze(owner, repo string, duration string) (*mod
 		})
 	}
 
-	// Sort contributors by commit count in descending order
 	sort.Slice(contributors, func(i, j int) bool {
 		return contributors[i].Commits > contributors[j].Commits
 	})
 
-	// Commit sıklığı analizini yap
-	dailyAvg, weeklyAvg, monthlyAvg, mostActiveDay, mostActiveTime := ra.analyzeCommitFrequency(contributors)
+	dailyAvg, weeklyAvg, monthlyAvg, mostActiveDay, mostActiveTime := ra.analyzeCommitFrequency(contributors, total, duration)
 
 	activeContributors := 0
 	recentContributors := 0
-	threeMonthsAgo := time.Now().AddDate(0, -3, 0)
+	threeMonthsAgo := time.Now().AddDate(0, -constants.RecentActivityMonths, 0)
 
 	for _, contributor := range contributors {
-		if contributor.Percentage >= 1.0 {
+		if contributor.Percentage >= constants.SignificantContributionPercentage {
 			activeContributors++
 		}
 		if contributor.LastCommit.After(threeMonthsAgo) {
@@ -146,7 +158,7 @@ func (ra *RepositoryAnalyzer) Analyze(owner, repo string, duration string) (*mod
 		}
 	}
 
-	contributorActivity := float64(activeContributors) / float64(len(contributors)) * 100
+	contributorActivity := float64(activeContributors) / float64(len(contributors)) * constants.KnowledgeScoreMaximum
 	knowledgeScore := calculateKnowledgeDistribution(stats)
 
 	return &models.RepositoryStats{
@@ -197,7 +209,7 @@ func calculateBusFactor(stats map[string]providers.CommitInfo) int {
 	for _, stat := range statsList {
 		cumulative += stat.percentage
 		busFactor++
-		if cumulative >= 80 {
+		if cumulative >= constants.BusFactorContributionPercentage {
 			break
 		}
 	}
@@ -227,7 +239,7 @@ func calculateKnowledgeDistribution(stats map[string]providers.CommitInfo) float
 	}
 
 	gini := sumDifferences / (2 * n * n)
-	knowledgeScore := (1 - gini) * 100
+	knowledgeScore := (1 - gini) * constants.KnowledgeScoreMaximum
 
 	return math.Round(knowledgeScore*100) / 100
 }
