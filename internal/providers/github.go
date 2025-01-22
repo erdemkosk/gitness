@@ -57,10 +57,10 @@ func (g *GitHubProvider) FetchCommits(owner, repo string, duration string, branc
 	variables := map[string]interface{}{
 		"owner": githubv4.String(owner),
 		"repo":  githubv4.String(repo),
-		"limit": githubv4.Int(constants.MaxPageSize),
+		"limit": githubv4.Int(constants.API.MaxPageSize),
 		"after": (*githubv4.String)(nil),
 		"ref":   githubv4.String(refName),
-		"since": (*githubv4.GitTimestamp)(nil), // Default olarak nil
+		"since": (*githubv4.GitTimestamp)(nil),
 	}
 
 	// Add duration if specified

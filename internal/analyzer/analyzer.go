@@ -111,25 +111,25 @@ func (ra *RepositoryAnalyzer) analyzeCommitFrequency(contributors []models.Contr
 
 func (ra *RepositoryAnalyzer) Analyze(owner, repo string, duration string, branch string) (*models.RepositoryStats, error) {
 	if owner == "" || repo == "" {
-		return nil, fmt.Errorf(constants.ErrEmptyOwnerRepo)
+		return nil, fmt.Errorf("%s", constants.ErrorMessages.EmptyOwnerRepo)
 	}
 
-	stats, err := ra.provider.FetchCommits(owner, repo, duration, branch)
+	commits, err := ra.provider.FetchCommits(owner, repo, duration, branch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch commits: %v", err)
+		return nil, err
 	}
 
-	if len(stats) == 0 {
-		return nil, fmt.Errorf(constants.ErrNoCommitsFound)
+	if len(commits) == 0 {
+		return nil, fmt.Errorf("%s", constants.ErrorMessages.NoCommitsFound)
 	}
 
 	total := 0
-	for _, info := range stats {
+	for _, info := range commits {
 		total += info.Count
 	}
 
 	var contributors []models.Contributor
-	for author, info := range stats {
+	for author, info := range commits {
 		percentage := float64(info.Count) * 100 / float64(total)
 		contributors = append(contributors, models.Contributor{
 			Name:       author,
@@ -147,10 +147,10 @@ func (ra *RepositoryAnalyzer) Analyze(owner, repo string, duration string, branc
 
 	activeContributors := 0
 	recentContributors := 0
-	threeMonthsAgo := time.Now().AddDate(0, -constants.RecentActivityMonths, 0)
+	threeMonthsAgo := time.Now().AddDate(0, -constants.Metrics.ContributorStats.RecentMonths, 0)
 
 	for _, contributor := range contributors {
-		if contributor.Percentage >= constants.SignificantContributionPercentage {
+		if contributor.Percentage > constants.Metrics.ContributorStats.SignificantContrib {
 			activeContributors++
 		}
 		if contributor.LastCommit.After(threeMonthsAgo) {
@@ -158,15 +158,15 @@ func (ra *RepositoryAnalyzer) Analyze(owner, repo string, duration string, branc
 		}
 	}
 
-	contributorActivity := float64(activeContributors) / float64(len(contributors)) * constants.KnowledgeScoreMaximum
-	knowledgeScore := calculateKnowledgeDistribution(stats)
+	contributorActivity := float64(activeContributors) / float64(len(contributors)) * constants.Metrics.KnowledgeScore.Maximum
+	knowledgeScore := calculateKnowledgeDistribution(commits)
 
 	return &models.RepositoryStats{
 		Owner:                owner,
 		Repo:                 repo,
 		Branch:               branch,
 		Contributors:         contributors,
-		BusFactor:            calculateBusFactor(stats),
+		BusFactor:            calculateBusFactor(commits),
 		TotalCommits:         total,
 		ContributorActivity:  contributorActivity,
 		RecentContributors:   recentContributors,
@@ -210,7 +210,7 @@ func calculateBusFactor(stats map[string]providers.CommitInfo) int {
 	for _, stat := range statsList {
 		cumulative += stat.percentage
 		busFactor++
-		if cumulative >= constants.BusFactorContributionPercentage {
+		if cumulative >= constants.Metrics.BusFactor.Percentage {
 			break
 		}
 	}
@@ -240,7 +240,7 @@ func calculateKnowledgeDistribution(stats map[string]providers.CommitInfo) float
 	}
 
 	gini := sumDifferences / (2 * n * n)
-	knowledgeScore := (1 - gini) * constants.KnowledgeScoreMaximum
+	knowledgeScore := (1 - gini) * constants.Metrics.KnowledgeScore.Maximum
 
 	return math.Round(knowledgeScore*100) / 100
 }

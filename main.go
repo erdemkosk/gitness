@@ -1,72 +1,23 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/erdemkosk/gitness/internal/analyzer"
+	"github.com/erdemkosk/gitness/internal/config"
 	"github.com/erdemkosk/gitness/internal/output"
 	"github.com/erdemkosk/gitness/internal/providers"
 	"github.com/erdemkosk/gitness/internal/util"
-	"github.com/joho/godotenv"
 )
 
-func getRepositoryURL() (string, error) {
-	// First try command line argument
-	args := flag.Args()
-	if len(args) == 1 {
-		return args[0], nil
-	}
-
-	// If no args, try environment variable
-	if url := os.Getenv("REPOSITORY_URL"); url != "" {
-		return url, nil
-	}
-
-	return "", fmt.Errorf("please provide repository URL either as argument or set REPOSITORY_URL environment variable")
-}
-
 func main() {
-	outputFormat := flag.String("output", "", "Output format: console, json, or markdown")
-	duration := flag.String("duration", "", "Analyze commits for last duration (e.g., 6m, 1y, 30d)")
-	branch := flag.String("branch", "", "Specific branch to analyze")
-	flag.Parse()
-
-	err := godotenv.Load()
-	if err != nil {
-		if !os.IsNotExist(err) {
-			log.Printf("Warning: Error loading .env file: %v", err)
-		}
-	}
-
-	if *outputFormat == "" {
-		envFormat := os.Getenv("OUTPUT_FORMAT")
-		if envFormat != "" {
-			*outputFormat = envFormat
-		} else {
-			*outputFormat = "console"
-		}
-	}
-
-	if *duration != "" {
-		os.Setenv("COMMIT_HISTORY_DURATION", *duration)
-	}
-
-	if *branch == "" {
-		envBranch := os.Getenv("REPOSITORY_BRANCH")
-		if envBranch != "" {
-			*branch = envBranch
-		}
-	}
-
-	url, err := getRepositoryURL()
+	cfg, err := config.LoadConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	repoInfo, err := util.ParseRepositoryURL(url)
+	repoInfo, err := util.ParseRepositoryURL(cfg.RepoURL)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -78,15 +29,15 @@ func main() {
 	}
 
 	repoAnalyzer := analyzer.NewRepositoryAnalyzer(provider)
-	stats, err := repoAnalyzer.Analyze(repoInfo.Owner, repoInfo.Repo, *duration, *branch)
+	stats, err := repoAnalyzer.Analyze(repoInfo.Owner, repoInfo.Repo, cfg.Duration, cfg.Branch)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	formatterFactory := output.NewFormatterFactory()
-	formatter, exists := formatterFactory.GetFormatter(*outputFormat)
+	formatter, exists := formatterFactory.GetFormatter(cfg.OutputFormat)
 	if !exists {
-		log.Fatalf("Unknown output format: %s", *outputFormat)
+		log.Fatalf("Unknown output format: %s", cfg.OutputFormat)
 	}
 
 	result, err := formatter.Format(stats)

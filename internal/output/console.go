@@ -63,16 +63,16 @@ func (f *ConsoleFormatter) Format(stats *models.RepositoryStats) (string, error)
 	output.WriteString(strings.Repeat("─", 20) + "\n")
 
 	busFactorColor := green
-	if stats.BusFactor < constants.BusFactorCriticalThreshold {
+	if stats.BusFactor < constants.Metrics.BusFactor.Critical {
 		busFactorColor = red
-	} else if stats.BusFactor < constants.BusFactorWarningThreshold {
+	} else if stats.BusFactor < constants.Metrics.BusFactor.Warning {
 		busFactorColor = yellow
 	}
 
 	knowledgeScoreColor := green
-	if stats.KnowledgeScore < constants.KnowledgeScoreCriticalThreshold {
+	if stats.KnowledgeScore < constants.Metrics.KnowledgeScore.Critical {
 		knowledgeScoreColor = red
-	} else if stats.KnowledgeScore < constants.KnowledgeScoreWarningThreshold {
+	} else if stats.KnowledgeScore < constants.Metrics.KnowledgeScore.Warning {
 		knowledgeScoreColor = yellow
 	}
 
@@ -98,7 +98,7 @@ func (f *ConsoleFormatter) Format(stats *models.RepositoryStats) (string, error)
 	output.WriteString(strings.Repeat("─", 20) + "\n")
 
 	for i, c := range stats.Contributors {
-		if i >= constants.MaxDisplayedContributors {
+		if i >= constants.Output.MaxDisplayedContributors {
 			break
 		}
 		output.WriteString(fmt.Sprintf("👤 %s: %s commits (%s%%)\n",
@@ -107,8 +107,8 @@ func (f *ConsoleFormatter) Format(stats *models.RepositoryStats) (string, error)
 			yellow(fmt.Sprintf("%.1f", c.Percentage))))
 	}
 
-	if len(stats.Contributors) > constants.MaxDisplayedContributors {
-		output.WriteString(fmt.Sprintf("\n... and %d more contributors\n", len(stats.Contributors)-constants.MaxDisplayedContributors))
+	if len(stats.Contributors) > constants.Output.MaxDisplayedContributors {
+		output.WriteString(fmt.Sprintf("\n... and %d more contributors\n", len(stats.Contributors)-constants.Output.MaxDisplayedContributors))
 	}
 
 	// Footer
