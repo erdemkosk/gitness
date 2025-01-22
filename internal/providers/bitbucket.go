@@ -7,9 +7,11 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/erdemkosk/gitness/internal/progress"
 	"github.com/erdemkosk/gitness/internal/util"
 )
 
@@ -115,6 +117,32 @@ func (b *BitbucketProvider) FetchCommits(owner, repo string, duration string, br
 		pageURL += "?" + strings.Join(params, "&")
 	}
 
+	progressBar := progress.NewProgressBar("Fetching commits")
+	defer progressBar.Finish()
+
+	// First make a HEAD request to get total count
+	req, err := http.NewRequestWithContext(context.Background(), "HEAD", pageURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+b.token)
+
+	resp, err := b.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("HTTP request failed: %v", err)
+	}
+	resp.Body.Close()
+
+	totalCount := 0
+	if countHeader := resp.Header.Get("X-Total-Count"); countHeader != "" {
+		totalCount, _ = strconv.Atoi(countHeader)
+	}
+	if totalCount == 0 {
+		totalCount = 100 // fallback if header not available
+	}
+
+	progressBar.SetTotal(int64(totalCount))
+
 	for pageURL != "" {
 		commits, nextPage, err := b.fetchPage(pageURL)
 		if err != nil {
@@ -147,6 +175,7 @@ func (b *BitbucketProvider) FetchCommits(owner, repo string, duration string, br
 				info.LastCommit = commitDate
 			}
 			authorStats[author] = info
+			progressBar.Increment()
 		}
 
 		pageURL = nextPage
