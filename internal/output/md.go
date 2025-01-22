@@ -15,6 +15,12 @@ func (f *MarkdownFormatter) Format(stats *models.RepositoryStats) (string, error
 	md.WriteString("![Gitness](https://github.com/erdemkosk/gitness/blob/master/logo.png?raw=true)\n\n")
 	md.WriteString(fmt.Sprintf("# Repository Analysis: %s/%s\n\n", stats.Owner, stats.Repo))
 
+	if stats.Branch != "" {
+		md.WriteString(fmt.Sprintf("## 🌿 Branch: %s\n\n", stats.Branch))
+	} else {
+		md.WriteString("## 🌿 Branch: default\n\n")
+	}
+
 	if stats.AnalysisDuration != "" {
 		md.WriteString(fmt.Sprintf("## 📅 Analysis Period: Last %s\n\n", stats.AnalysisDuration))
 	} else {

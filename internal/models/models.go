@@ -32,6 +32,7 @@ type CommitMessageStats struct {
 type RepositoryStats struct {
 	Owner                string
 	Repo                 string
+	Branch               string
 	Contributors         []Contributor
 	BusFactor            int
 	TotalCommits         int

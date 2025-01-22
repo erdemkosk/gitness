@@ -31,6 +31,7 @@ func getRepositoryURL() (string, error) {
 func main() {
 	outputFormat := flag.String("output", "", "Output format: console, json, or markdown")
 	duration := flag.String("duration", "", "Analyze commits for last duration (e.g., 6m, 1y, 30d)")
+	branch := flag.String("branch", "", "Specific branch to analyze")
 	flag.Parse()
 
 	err := godotenv.Load()
@@ -53,6 +54,13 @@ func main() {
 		os.Setenv("COMMIT_HISTORY_DURATION", *duration)
 	}
 
+	if *branch == "" {
+		envBranch := os.Getenv("REPOSITORY_BRANCH")
+		if envBranch != "" {
+			*branch = envBranch
+		}
+	}
+
 	url, err := getRepositoryURL()
 	if err != nil {
 		log.Fatal(err)
@@ -70,7 +78,7 @@ func main() {
 	}
 
 	repoAnalyzer := analyzer.NewRepositoryAnalyzer(provider)
-	stats, err := repoAnalyzer.Analyze(repoInfo.Owner, repoInfo.Repo, *duration)
+	stats, err := repoAnalyzer.Analyze(repoInfo.Owner, repoInfo.Repo, *duration, *branch)
 	if err != nil {
 		log.Fatal(err)
 	}

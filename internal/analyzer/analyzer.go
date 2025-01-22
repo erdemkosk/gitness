@@ -109,14 +109,14 @@ func (ra *RepositoryAnalyzer) analyzeCommitFrequency(contributors []models.Contr
 	return dailyAvg, weeklyAvg, monthlyAvg, mostActiveDay, mostActiveTime
 }
 
-func (ra *RepositoryAnalyzer) Analyze(owner, repo string, duration string) (*models.RepositoryStats, error) {
+func (ra *RepositoryAnalyzer) Analyze(owner, repo string, duration string, branch string) (*models.RepositoryStats, error) {
 	if owner == "" || repo == "" {
 		return nil, fmt.Errorf(constants.ErrEmptyOwnerRepo)
 	}
 
-	stats, err := ra.provider.FetchCommits(owner, repo, duration)
+	stats, err := ra.provider.FetchCommits(owner, repo, duration, branch)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", constants.ErrFailedToFetchCommits, err)
+		return nil, fmt.Errorf("failed to fetch commits: %v", err)
 	}
 
 	if len(stats) == 0 {
@@ -164,6 +164,7 @@ func (ra *RepositoryAnalyzer) Analyze(owner, repo string, duration string) (*mod
 	return &models.RepositoryStats{
 		Owner:                owner,
 		Repo:                 repo,
+		Branch:               branch,
 		Contributors:         contributors,
 		BusFactor:            calculateBusFactor(stats),
 		TotalCommits:         total,

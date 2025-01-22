@@ -22,11 +22,11 @@ func NewGitHubProvider(token string) *GitHubProvider {
 	}
 }
 
-func (g *GitHubProvider) FetchCommits(owner, repo string, duration string) (map[string]CommitInfo, error) {
+func (g *GitHubProvider) FetchCommits(owner, repo string, duration string, branch string) (map[string]CommitInfo, error) {
 	if duration != "" {
 		var query struct {
 			Repository struct {
-				DefaultBranchRef struct {
+				Ref struct {
 					Target struct {
 						Commit struct {
 							History struct {
@@ -44,7 +44,7 @@ func (g *GitHubProvider) FetchCommits(owner, repo string, duration string) (map[
 							} `graphql:"history(first: $limit, after: $after, since: $since)"`
 						} `graphql:"... on Commit"`
 					}
-				}
+				} `graphql:"ref(qualifiedName: $ref)"`
 			} `graphql:"repository(owner: $owner, name: $repo)"`
 		}
 
@@ -53,12 +53,18 @@ func (g *GitHubProvider) FetchCommits(owner, repo string, duration string) (map[
 			return nil, fmt.Errorf("failed to parse duration: %w", err)
 		}
 
+		refName := "refs/heads/master" // default branch
+		if branch != "" {
+			refName = fmt.Sprintf("refs/heads/%s", branch)
+		}
+
 		variables := map[string]interface{}{
 			"owner": githubv4.String(owner),
 			"repo":  githubv4.String(repo),
 			"limit": githubv4.Int(constants.MaxPageSize),
 			"after": (*githubv4.String)(nil),
 			"since": githubv4.GitTimestamp{Time: dur.ToTime()},
+			"ref":   githubv4.String(refName),
 		}
 
 		authorStats := make(map[string]CommitInfo)
@@ -70,7 +76,7 @@ func (g *GitHubProvider) FetchCommits(owner, repo string, duration string) (map[
 				return nil, fmt.Errorf("GitHub query failed: %v", err)
 			}
 
-			for _, commit := range query.Repository.DefaultBranchRef.Target.Commit.History.Nodes {
+			for _, commit := range query.Repository.Ref.Target.Commit.History.Nodes {
 				author := commit.Author.Name
 				if author == "" {
 					author = commit.Author.Email
@@ -83,9 +89,9 @@ func (g *GitHubProvider) FetchCommits(owner, repo string, duration string) (map[
 				authorStats[author] = info
 			}
 
-			hasNextPage = query.Repository.DefaultBranchRef.Target.Commit.History.PageInfo.HasNextPage
+			hasNextPage = query.Repository.Ref.Target.Commit.History.PageInfo.HasNextPage
 			if hasNextPage {
-				variables["after"] = githubv4.String(query.Repository.DefaultBranchRef.Target.Commit.History.PageInfo.EndCursor)
+				variables["after"] = githubv4.String(query.Repository.Ref.Target.Commit.History.PageInfo.EndCursor)
 			}
 		}
 
@@ -93,7 +99,7 @@ func (g *GitHubProvider) FetchCommits(owner, repo string, duration string) (map[
 	} else {
 		var query struct {
 			Repository struct {
-				DefaultBranchRef struct {
+				Ref struct {
 					Target struct {
 						Commit struct {
 							History struct {
@@ -111,8 +117,13 @@ func (g *GitHubProvider) FetchCommits(owner, repo string, duration string) (map[
 							} `graphql:"history(first: $limit, after: $after)"`
 						} `graphql:"... on Commit"`
 					}
-				}
+				} `graphql:"ref(qualifiedName: $ref)"`
 			} `graphql:"repository(owner: $owner, name: $repo)"`
+		}
+
+		refName := "refs/heads/master" // default branch
+		if branch != "" {
+			refName = fmt.Sprintf("refs/heads/%s", branch)
 		}
 
 		variables := map[string]interface{}{
@@ -120,6 +131,7 @@ func (g *GitHubProvider) FetchCommits(owner, repo string, duration string) (map[
 			"repo":  githubv4.String(repo),
 			"limit": githubv4.Int(constants.MaxPageSize),
 			"after": (*githubv4.String)(nil),
+			"ref":   githubv4.String(refName),
 		}
 
 		authorStats := make(map[string]CommitInfo)
@@ -131,7 +143,7 @@ func (g *GitHubProvider) FetchCommits(owner, repo string, duration string) (map[
 				return nil, fmt.Errorf("GitHub query failed: %v", err)
 			}
 
-			for _, commit := range query.Repository.DefaultBranchRef.Target.Commit.History.Nodes {
+			for _, commit := range query.Repository.Ref.Target.Commit.History.Nodes {
 				author := commit.Author.Name
 				if author == "" {
 					author = commit.Author.Email
@@ -144,9 +156,9 @@ func (g *GitHubProvider) FetchCommits(owner, repo string, duration string) (map[
 				authorStats[author] = info
 			}
 
-			hasNextPage = query.Repository.DefaultBranchRef.Target.Commit.History.PageInfo.HasNextPage
+			hasNextPage = query.Repository.Ref.Target.Commit.History.PageInfo.HasNextPage
 			if hasNextPage {
-				variables["after"] = githubv4.String(query.Repository.DefaultBranchRef.Target.Commit.History.PageInfo.EndCursor)
+				variables["after"] = githubv4.String(query.Repository.Ref.Target.Commit.History.PageInfo.EndCursor)
 			}
 		}
 

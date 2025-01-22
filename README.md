@@ -12,6 +12,7 @@ Gitness - Your repo's fitness witness! Track your bus factor before your code mi
 - Support for multiple VCS providers (GitHub, Bitbucket)
 - Multiple output formats (Console, JSON, Markdown)
 - Configurable analysis period (e.g., 6m, 1y, 30d)
+- Branch-specific analysis support
 - CI/CD pipeline integration
 - Docker support
 
@@ -27,14 +28,17 @@ gitness --duration 6m https://github.com/user/repo
 # Analyze last 1 year with JSON output
 gitness --duration 1y --output json https://github.com/user/repo
 
-# Analyze last 30 days with Markdown output
-gitness --duration 30d --output markdown https://github.com/user/repo
+# Analyze specific branch with Markdown output
+gitness --branch feature-branch --output markdown https://github.com/user/repo
+
+# Analyze specific branch for last 30 days
+gitness --duration 30d --branch experimental --output console https://github.com/user/repo
 
 # Analyze last week with console output (default)
 gitness --duration 7d --output console https://github.com/user/repo
 
-# Analyze last quarter with JSON output
-gitness --duration 3m --output json https://github.com/user/repo
+# Analyze last quarter with JSON output and specific branch
+gitness --duration 3m --branch develop --output json https://github.com/user/repo
 
 # Analyze last month with Markdown output and save to file
 gitness --duration 1m --output markdown https://github.com/user/repo > report.md
@@ -95,6 +99,7 @@ Your repo's fitness witness! Track your bus factor before your code misses the b
 📊 Repository: user/repo
 ──────────────────────────────────────────────────
 
+🌿 Branch: default
 🕒 Analysis Period: Last 6 months
 
 🎯 Core Metrics
@@ -134,6 +139,7 @@ GITHUB_TOKEN=your_token
 BITBUCKET_CLIENT_ID=your_client_id
 BITBUCKET_CLIENT_SECRET=your_client_secret
 COMMIT_HISTORY_DURATION=6m  # Optional: 6m, 1y, 30d etc.
+REPOSITORY_BRANCH=main      # Optional: Specify branch to analyze
 ```
 
 ## Installation
@@ -158,6 +164,8 @@ docker run \                                                                    
 - `BITBUCKET_CLIENT_ID`: Bitbucket OAuth client ID
 - `BITBUCKET_CLIENT_SECRET`: Bitbucket OAuth client secret
 - `OUTPUT_FORMAT`: Output format (console, json, markdown)
+- `COMMIT_HISTORY_DURATION`: Analysis period (e.g., 6m, 1y, 30d)
+- `REPOSITORY_BRANCH`: Branch to analyze (optional, defaults to repository's default branch)
 
 ### Repository URL Formats
 
@@ -258,4 +266,10 @@ jobs:
 3. Commit your changes
 4. Push to the branch
 5. Create a new Pull Request
+
+### Command Line Arguments
+
+- `--output`: Output format (console, json, markdown)
+- `--duration`: Analysis period (e.g., 6m, 1y, 30d)
+- `--branch`: Branch to analyze (optional, defaults to repository's default branch)
 

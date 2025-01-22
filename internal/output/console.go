@@ -45,6 +45,12 @@ func (f *ConsoleFormatter) Format(stats *models.RepositoryStats) (string, error)
 	output.WriteString("\n")
 	output.WriteString(strings.Repeat("─", 50) + "\n")
 
+	if stats.Branch != "" {
+		output.WriteString(yellow(fmt.Sprintf("🌿 Branch: %s\n", stats.Branch)))
+	} else {
+		output.WriteString(yellow("🌿 Branch: default\n"))
+	}
+
 	if stats.AnalysisDuration != "" {
 		output.WriteString(yellow(fmt.Sprintf("🕒 Analysis Period: Last %s\n", stats.AnalysisDuration)))
 	} else {

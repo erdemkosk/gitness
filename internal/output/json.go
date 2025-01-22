@@ -11,6 +11,7 @@ type JSONFormatter struct{}
 type jsonOutput struct {
 	Owner    string `json:"owner"`
 	Repo     string `json:"repo"`
+	Branch   string `json:"branch"`
 	Analysis struct {
 		Duration            string  `json:"duration"`
 		BusFactor           int     `json:"busFactor"`
@@ -36,8 +37,9 @@ type jsonOutput struct {
 
 func (f *JSONFormatter) Format(stats *models.RepositoryStats) (string, error) {
 	output := jsonOutput{
-		Owner: stats.Owner,
-		Repo:  stats.Repo,
+		Owner:  stats.Owner,
+		Repo:   stats.Repo,
+		Branch: stats.Branch,
 	}
 
 	output.Analysis.Duration = stats.AnalysisDuration

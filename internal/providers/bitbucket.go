@@ -82,11 +82,23 @@ func getOAuthToken(clientID, clientSecret string) (string, error) {
 	return tokenResp.AccessToken, nil
 }
 
-func (b *BitbucketProvider) FetchCommits(owner, repo string, duration string) (map[string]CommitInfo, error) {
+func (b *BitbucketProvider) FetchCommits(owner, repo string, duration string, branch string) (map[string]CommitInfo, error) {
 	authorStats := make(map[string]CommitInfo)
 
-	pageURL := fmt.Sprintf("https://api.bitbucket.org/2.0/repositories/%s/%s/commits?pagelen=100", owner, repo)
+	// Base URL with branch
+	var pageURL string
+	if branch == "" {
+		// For default branch, use main branch endpoint
+		pageURL = fmt.Sprintf("https://api.bitbucket.org/2.0/repositories/%s/%s/commits/refs/heads/master", owner, repo)
+	} else {
+		// For specific branch
+		pageURL = fmt.Sprintf("https://api.bitbucket.org/2.0/repositories/%s/%s/commits/refs/heads/%s", owner, repo, branch)
+	}
 
+	// Query parameters
+	params := []string{"pagelen=100"}
+
+	// Add duration parameter if specified
 	var since *time.Time
 	if duration != "" {
 		dur, err := util.ParseDuration(duration)
@@ -95,13 +107,27 @@ func (b *BitbucketProvider) FetchCommits(owner, repo string, duration string) (m
 		}
 		t := dur.ToTime()
 		since = &t
-		pageURL += fmt.Sprintf("&since=%s", t.Format(time.RFC3339))
+		params = append(params, fmt.Sprintf("since=%s", t.Format(time.RFC3339)))
+	}
+
+	// Construct initial URL with parameters
+	if len(params) > 0 {
+		pageURL += "?" + strings.Join(params, "&")
 	}
 
 	for pageURL != "" {
 		commits, nextPage, err := b.fetchPage(pageURL)
 		if err != nil {
-			return nil, fmt.Errorf("failed to fetch commits: %v", err)
+			// If master branch fails, try main branch
+			if branch == "" && strings.Contains(pageURL, "refs/heads/master") {
+				pageURL = strings.Replace(pageURL, "refs/heads/master", "refs/heads/main", 1)
+				commits, nextPage, err = b.fetchPage(pageURL)
+				if err != nil {
+					return nil, fmt.Errorf("failed to fetch commits from both master and main branches: %v", err)
+				}
+			} else {
+				return nil, fmt.Errorf("failed to fetch commits: %v", err)
+			}
 		}
 
 		for _, commit := range commits {
