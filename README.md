@@ -273,3 +273,29 @@ jobs:
 - `--duration`: Analysis period (e.g., 6m, 1y, 30d)
 - `--branch`: Branch to analyze (optional, defaults to repository's default branch)
 
+## License
+
+This project is licensed under the GNU General Public License v3.0 (GPL-3.0) - see below for details:
+
+### Permissions
+- ✅ Commercial use
+- ✅ Distribution
+- ✅ Modification
+- ✅ Private use
+
+### Conditions
+- ❗ Disclose source: Any modified version must be open source
+- ❗ License and copyright notice: Include the original license and copyright
+- ❗ Same license: Any modified version must use the same license (GPL-3.0)
+- ❗ State changes: Document all changes made to the code
+
+### Limitations
+- ❌ Liability: No warranty is provided
+- ❌ Trademark use: Does not grant trademark rights
+
+For the full license text, see [LICENSE](LICENSE) file or visit https://www.gnu.org/licenses/gpl-3.0.en.html
+
+Copyright (c) 2025 Erdem Köşk
+
+
+
